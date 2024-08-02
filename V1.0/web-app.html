@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Browser File Encrypter</title>
+    <link rel="icon" type="image/x-icon" href="https://github.com/Northstrix/In-Browser-File-Encrypter/blob/main/V1.0/logo/logo.png?raw=true">
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Exo:400,700');
+        @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+        --white: #FCFCFC;
+        --gray: #CBCDD3;
+        --dark: #777777;
+        --error: #EF8D9C;
+        --orange: #FFC39E;
+        --success: #B0DB7D;
+        --secondary: #99DBB4;
+        --font: 'Montserrat', 'Exo', sans-serif;
+        }
+
+        body {
+            font-family: 'Montserrat', 'Exo', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 5em;
+            overflow-x: hidden;
+            color: #333;
+        }
+
+        #select-container {
+            position: fixed;
+            top: 1em;
+            right: 1em;
+            width: 150px;
+            background: #FFFFFF;
+            border-radius: 10px;
+            border: 0.5px solid rgba(202, 219, 226, 0.40);
+            box-shadow: 0px 3px 6px rgba(79, 104, 113, 0.20);
+            overflow: hidden;
+            transition: all 0.2s ease-in-out;
+            z-index: 1000;
+        }
+
+        .language-label {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(202, 219, 226, 0.40);
+        }
+
+        #select-container ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-in-out;
+        }
+
+        #select-container:hover ul {
+            max-height: 500px; /* Adjust this value based on your needs */
+        }
+
+        #select-container ul li {
+            opacity: 1;
+            transition: opacity 0.2s ease-in-out;
+            padding: 15px; /* Increased from 5px */
+        }
+
+        #select-container ul li img {
+            width: 120px; /* Increased from 40px */
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border-radius: 5px;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0px 0px 6px rgba(79, 104, 113, 0.30);
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+        }
+
+        #select-container ul li img:hover {
+            box-shadow: 0px 5px 10px rgba(79, 104, 113, 0.30);
+            transform: scale(1.08);
+        }
+
+        /* Tooltip styles */
+        [tooltip] {
+            position: relative; /* opinion 1 */
+            font-weight: bold;
+        }
+
+        [tooltip]::before,
+        [tooltip]::after {
+            text-transform: none; /* opinion 2 */
+            font-size: 12px; /* opinion 3 */
+            line-height: 1;
+            user-select: none;
+            pointer-events: none;
+            position: absolute;
+            display: none;
+            opacity: 0;
+        }
+
+        [tooltip]::before {
+            content: '';
+            border: 5px solid transparent; /* opinion 4 */
+            z-index: 1001; /* absurdity 1 */
+        }
+
+        [tooltip]::after {
+            content: attr(tooltip); /* magic! */
+            /* most of the rest of this is opinion */
+            font-family: Helvetica, sans-serif;
+            text-align: center;
+            /* Let the content set the size of the tooltips but this will also keep them from being obnoxious */
+            width: 40px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 3px 0px;
+            border-radius: .3ch;
+            box-shadow: 0 1em 2em -.5em rgba(0, 0, 0, 0.35);
+            background: #465663;
+            color: #fff;
+            z-index: 1000; /* absurdity 2 */
+        }
+
+        /* Make the tooltips respond to hover */
+        [tooltip]:hover::before,
+        [tooltip]:hover::after {
+            display: block;
+        }
+
+        /* don't show empty tooltips */
+        [tooltip='']::before,
+        [tooltip='']::after {
+            display: none !important;
+        }
+
+        /* FLOW: UP */
+        [tooltip]:not([flow])::before,
+        [tooltip][flow^="up"]::before {
+            bottom: 50%;
+            border-bottom-width: 0;
+            border-top-color: #465663;
+        }
+
+        [tooltip]:not([flow])::after,
+        [tooltip][flow^="up"]::after {
+            bottom: calc(50% + 5px);
+        }
+
+        [tooltip]:not([flow])::before,
+        [tooltip]:not([flow])::after,
+        [tooltip][flow^="up"]::before {
+            left: -15.5px;
+            bottom: 40px;
+            transform: translate(-50%, -.5em);
+        }
+
+        [tooltip][flow^="up"]::after {
+            left: -15.5px;
+            bottom: 45px;
+            transform: translate(-50%, -.5em);
+        }
+
+        /* FLOW: DOWN */
+        [tooltip][flow^="down"]::before {
+            top: 70%;
+            border-top-width: 0;
+            border-bottom-color: #465663;
+        }
+
+        [tooltip][flow^="down"]::after {
+            top: calc(70% + 5px);
+        }
+
+        [tooltip][flow^="down"]::before,
+        [tooltip][flow^="down"]::after {
+            left: -15.5px;
+            transform: translate(-50%, .5em);
+        }
+
+        /* KEYFRAMES */
+        @keyframes tooltips-vert {
+            to {
+                opacity: .9;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        /* FX All The Things */
+        [tooltip]:not([flow]):hover::before,
+        [tooltip]:not([flow]):hover::after,
+        [tooltip][flow^="up"]:hover::before,
+        [tooltip][flow^="up"]:hover::after,
+        [tooltip][flow^="down"]:hover::before,
+        [tooltip][flow^="down"]:hover::after {
+            animation: tooltips-vert 300ms ease-out forwards;
+        }
+
+        .area {
+            background: #4e54c8;
+            background: -webkit-linear-gradient(to left, #8f94fb, #4e54c8);
+            width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .circles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .circles li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            animation: animate 25s linear infinite;
+            bottom: -150px;
+        }
+
+        .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+        .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+        .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+        .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+        .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+        .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+        .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+        .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+        .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
+        .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+        @keyframes animate {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+        }
+
+        h1 {
+            font-weight: bold;
+            margin: 0;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        p {
+            font-size: 14px;
+            font-weight: 100;
+            line-height: 20px;
+            letter-spacing: 0.5px;
+            margin: 20px 0 30px;
+        }
+
+        span {
+            font-size: 12px;
+        }
+
+        a {
+            color: #333;
+            font-size: 14px;
+            text-decoration: none;
+            margin: 15px 0;
+        }
+
+        button {
+            border-radius: 20px;
+            border: 2px solid #4E54C8;
+            background-color: #7945C5;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 12px 24px;
+            margin: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: transform 80ms ease-in;
+            width: 256px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        button:hover {
+            background-color: #4E54C8;
+            border: 2px solid #0083EB
+        }
+
+        button.ghost {
+            background-color: transparent;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 12px 24px;
+            margin: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 20px;
+            transition: all 0.8s ease;
+            position: relative;
+            overflow: hidden; /* Ensure the reflection is clipped by the button's border radius */
+        }
+
+        button.ghost:hover {
+            background: #FFFFFF;
+            color: #242424;
+            box-shadow: 0 0 5px #FFFFFF,
+                        0 0 25px #FFFFFF,
+                        0 0 50px #FFFFFF,
+                        0 0 200px #FFFFFF;
+            transition: all 0.8s ease;
+        }
+
+        /* Reflection effect */
+        button.ghost::after {
+            content: '';
+            position: absolute;
+            top: 100%; /* Position below the button */
+            left: 0;
+            right: 0;
+            height: 100%; /* Adjust height as needed */
+            background: inherit; /* Use the same background as the button */
+            border-radius: 20px; /* Match the button's border radius */
+            opacity: 0.2; /* Adjust opacity for reflection effect */
+            transform: scaleY(-1); /* Flip vertically */
+            pointer-events: none; /* Prevent interaction with the reflection */
+            transition: opacity 0.8s ease; /* Smooth transition for the reflection */
+        }
+
+        button.ghost:hover::after {
+            opacity: 0.5; /* Increase opacity on hover for a more pronounced effect */
+        }
+
+        form {
+            background-color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 0 50px;
+            height: 100%;
+            text-align: center;
+        }
+
+        input {
+            background-color: #eee;
+            border: none;
+            padding: 12px 15px;
+            margin: 8px 0;
+            width: 100%;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            position: relative;
+            overflow: hidden;
+            width: 768px;
+            max-width: 100%;
+            min-height: 520px;
+            margin-bottom: 7em;
+        }
+
+        .form-container {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            transition: all 0.6s ease-in-out;
+            width: 50%;
+        }
+
+        .sign-in-container {
+            left: 0;
+            width: 50%;
+            z-index: 2;
+        }
+
+        .container.right-panel-active .sign-in-container {
+            transform: translateX(100%);
+        }
+
+        .sign-up-container {
+            left: 0;
+            width: 50%;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .container.right-panel-active .sign-up-container {
+            transform: translateX(100%);
+            opacity: 1;
+            z-index: 5;
+            animation: show 0.6s;
+        }
+
+        @keyframes show {
+            0%, 49.99% { opacity: 0; z-index: 1; }
+            50%, 100% { opacity: 1; z-index: 5; }
+        }
+
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+            transition: transform 0.6s ease-in-out;
+            z-index: 100;
+        }
+
+        .container.right-panel-active .overlay-container {
+            transform: translateX(-100%);
+        }
+
+        .overlay {
+            background: #3D4785;
+            background: -webkit-linear-gradient(to right, #3D4785, #0083EB);
+            background: linear-gradient(to right, #3D4785, #0083EB);
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: 0 0;
+            color: #FFFFFF;
+            position: relative;
+            left: -100%;
+            height: 100%;
+            width: 200%;
+            transform: translateX(0);
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .container.right-panel-active .overlay {
+            transform: translateX(50%);
+        }
+
+        .overlay-panel {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 0 40px;
+            text-align: center;
+            top: 0;
+            height: 100%;
+            width: 50%;
+            transform: translateX(0);
+            transition: transform 0.6s ease-in-out;
+        }
+
+        .overlay-left { transform: translateX(-20%); }
+        .container.right-panel-active .overlay-left { transform: translateX(0); }
+        .overlay-right { right: 0; transform: translateX(0); }
+        .container.right-panel-active .overlay-right { transform: translateX(20%); }
+
+        .social-container {
+            margin: 20px 0;
+        }
+
+        .social-container a {
+            border: 1px solid #DDDDDD;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 5px;
+            height: 40px;
+            width: 40px;
+        }
+
+        .custom-links a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        .custom-links a:hover {
+            text-decoration: none;
+        }
+
+        .hidden-input-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .hidden-input-container input {
+            width: 100%;
+            padding: 10px;
+            width: 256px;
+            padding-right: 40px; /* Add space for the icon */
+            border: 1px solid hsl(233deg 36% 38%);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .hidden-input-container ion-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: hsl(233deg 36% 38%);
+        }
+
+        footer {
+            background-color: #222;
+            color: #fff;
+            font-size: 14px;
+            bottom: 0;
+            position: fixed;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 999;
+        }
+
+        footer p {
+            margin: 10px 0;
+        }
+
+        footer i {
+            color: red;
+        }
+
+        footer a {
+            color: #3c97bf;
+            text-decoration: none;
+        }
+
+        .additional-container {
+            background: hsl(213deg 85% 97%);
+            padding: 2em;
+            border-radius: 10px;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            width: 768px;
+            max-width: 100%;
+            margin-bottom: 7em;
+        }
+
+        #popup-form-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-table-form {
+            background: -webkit-linear-gradient(left, #25c481, #25b7c4);
+            background: linear-gradient(to right, #25c481, #25b7c4);
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 720px;
+        }
+
+        .popup-table-form h1 {
+            font-size: 30px;
+            color: #fff;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .popup-table-form table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .popup-table-form .tbl-header {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        .popup-table-form .tbl-content {
+            height: 300px;
+            overflow-x: auto;
+            margin-top: 0px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .popup-table-form th {
+            padding: 20px 15px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 12px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .popup-table-form td {
+            padding: 15px;
+            text-align: left;
+            vertical-align: middle;
+            font-weight: 300;
+            font-size: 12px;
+            color: #fff;
+            border-bottom: solid 1px rgba(255,255,255,0.1);
+        }
+
+        .popup-table-form button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 20px;
+            background-color: #fff;
+            color: #25c481;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Scrollbar styles for the pop-up table */
+        .popup-table-form ::-webkit-scrollbar {
+            width: 6px;
+        } 
+
+        .popup-table-form ::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+        } 
+
+        .popup-table-form ::-webkit-scrollbar-thumb {
+            -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+        }
+
+        .notification-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1001;
+        }
+
+        .notification-toast {
+            background-color: #F1F7FE;
+            color: #4E54C8;
+            border-radius: 5px;
+            padding: 1rem 2rem;
+            margin: 0.5rem;
+            font-family: "Poppins", sans-serif;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .notification-toast.error {
+            color: #FF0000;
+        }
+
+        .notification-toast.fade-out {
+            opacity: 0;
+        }
+
+        .popup-message-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .filename-span {
+            font-size: inherit;
+            font-weight: inherit;
+        }
+
+        .file-processing-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background: transparent;
+            border-radius: 10px;
+            z-index: 1000;
+            display: none;
+            perspective: 1000px;
+        }
+
+        .file-processing-popup-main {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+
+        .file-processing-popup-content {
+            transform: translateZ(60px);
+            width: 100%;
+        }
+
+        .file-processing-popup-message-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .file-processing-popup-progress {
+            background-color: #d8d8d8;
+            border-radius: 20px;
+            position: relative;
+            margin: 15px 0;
+            height: 30px;
+            width: 100%;
+        }
+
+        .file-processing-popup-progress-done {
+            background: linear-gradient(to left, #7945C5, #007BFF);
+            box-shadow: 0 3px 3px -5px #7945C5, 0 2px 5px #007BFF;
+            border-radius: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 0;
+            opacity: 0;
+        }
+
+        .file-processing-popup-button-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .file-processing-popup-button {
+            position: relative;
+            z-index: 0;
+            width: 240px;
+            height: 56px;
+            text-decoration: none;
+            font-size: 14px;
+            margin: 10px;
+            font-weight: bold;
+            color: var(--line_color);
+            letter-spacing: 2px;
+            transition: all .3s ease;
+        }
+
+        .file-processing-popup-button.type--B {
+            --line_color: #1b1919;
+            --back_color: #99caff;
+        }
+
+        .file-processing-popup-button.type--C {
+            --line_color: #00135C;
+            --back_color: #c9b5e8;
+        }
+
+        .file-processing-popup-button .button__text {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .file-processing-popup-button::before,
+        .file-processing-popup-button::after,
+        .file-processing-popup-button .button__text::before,
+        .file-processing-popup-button .button__text::after {
+            content: '';
+            position: absolute;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--line_color);
+            transition: all .5s ease;
+        }
+
+        .file-processing-popup-button::before {
+            top: 0;
+            left: 54px;
+            width: calc( 100% - 56px * 2 - 16px );
+        }
+
+        .file-processing-popup-button::after {
+            top: 0;
+            right: 54px;
+            width: 8px;
+        }
+
+        .file-processing-popup-button .button__text::before {
+            bottom: 0;
+            right: 54px;
+            width: calc( 100% - 56px * 2 - 16px );
+        }
+
+        .file-processing-popup-button .button__text::after {
+            bottom: 0;
+            left: 54px;
+            width: 8px;
+        }
+
+        .file-processing-popup-button .button__line {
+            position: absolute;
+            top: 0;
+            width: 56px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .file-processing-popup-button .button__line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 150%;
+            height: 100%;
+            box-sizing: border-box;
+            border-radius: 300px;
+            border: solid 3px var(--line_color);
+        }
+
+        .file-processing-popup-button .button__line:nth-child(1),
+        .file-processing-popup-button .button__line:nth-child(1)::before {
+            left: 0;
+        }
+
+        .file-processing-popup-button .button__line:nth-child(2),
+        .file-processing-popup-button .button__line:nth-child(2)::before {
+            right: 0;
+        }
+
+        .file-processing-popup-button:hover {
+            letter-spacing: 6px;
+        }
+
+        .file-processing-popup-button:hover::before,
+        .file-processing-popup-button:hover .button__text::before {
+            width: 8px;
+        }
+
+        .file-processing-popup-button:hover::after,
+        .file-processing-popup-button:hover .button__text::after {
+            width: calc( 100% - 56px * 2 - 16px );
+        }
+
+        .file-processing-popup-button .button__drow1,
+        .file-processing-popup-button .button__drow2 {
+            position: absolute;
+            z-index: -1;
+            border-radius: 16px;
+            transform-origin: 16px 16px;
+        }
+
+        .file-processing-popup-button .button__drow1 {
+            top: -16px;
+            left: 40px;
+            width: 32px;
+            height: 0;
+            transform: rotate( 30deg );
+        }
+
+        .file-processing-popup-button .button__drow2 {
+            top: 44px;
+            left: 77px;
+            width: 32px;
+            height: 0;
+            transform: rotate(-127deg );
+        }
+
+        .file-processing-popup-button .button__drow1::before,
+        .file-processing-popup-button .button__drow1::after,
+        .file-processing-popup-button .button__drow2::before,
+        .file-processing-popup-button .button__drow2::after {
+            content: '';
+            position: absolute;
+        }
+
+        .file-processing-popup-button .button__drow1::before {
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 32px;
+            border-radius: 16px;
+            transform-origin: 16px 16px;
+            transform: rotate( -60deg );
+        }
+
+        .file-processing-popup-button .button__drow1::after {
+            top: -10px;
+            left: 45px;
+            width: 0;
+            height: 32px;
+            border-radius: 16px;
+            transform-origin: 16px 16px;
+            transform: rotate( 69deg );
+        }
+
+        .file-processing-popup-button .button__drow2::before {
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 32px;
+            border-radius: 16px;
+            transform-origin: 16px 16px;
+            transform: rotate( -146deg );
+        }
+
+        .file-processing-popup-button .button__drow2::after {
+            bottom: 26px;
+            left: -40px;
+            width: 0;
+            height: 32px;
+            border-radius: 16px;
+            transform-origin: 16px 16px;
+            transform: rotate( -262deg );
+        }
+
+        .file-processing-popup-button .button__drow1,
+        .file-processing-popup-button .button__drow1::before,
+        .file-processing-popup-button .button__drow1::after,
+        .file-processing-popup-button .button__drow2,
+        .file-processing-popup-button .button__drow2::before,
+        .file-processing-popup-button .button__drow2::after {
+            background: var( --back_color );
+        }
+
+        .file-processing-popup-button:hover .button__drow1 {
+            animation: drow1 ease-in .06s;
+            animation-fill-mode: forwards;
+        }
+
+        .file-processing-popup-button:hover .button__drow1::before {
+            animation: drow2 linear .08s .06s;
+            animation-fill-mode: forwards;
+        }
+
+        .file-processing-popup-button:hover .button__drow1::after {
+            animation: drow3 linear .03s .14s;
+            animation-fill-mode: forwards;
+        }
+
+        .file-processing-popup-button:hover .button__drow2 {
+            animation: drow4 linear .06s .2s;
+            animation-fill-mode: forwards;
+        }
+
+        .file-processing-popup-button:hover .button__drow2::before {
+            animation: drow3 linear .03s .26s;
+            animation-fill-mode: forwards;
+        }
+
+        .file-processing-popup-button:hover .button__drow2::after {
+            animation: drow5 linear .06s .32s;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes drow1 {
+            0%   { height: 0; }
+            100% { height: 100px; }
+        }
+
+        @keyframes drow2 {
+            0%   { width: 0; opacity: 0; }
+            10%  { opacity: 0; }
+            11%  { opacity: 1; }
+            100% { width: 120px; }
+        }
+
+        @keyframes drow3 {
+            0%   { width: 0; }
+            100% { width: 80px; }
+        }
+
+        @keyframes drow4 {
+            0%   { height: 0; }
+            100% { height: 120px; }
+        }
+
+        @keyframes drow5 {
+            0%   { width: 0; }
+            100% { width: 124px; }
+        }
+
+        .file-name-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .rectangle-pop-up-notification-box {
+            position: absolute;
+            width: 245px;
+            height: 250px;
+            border-radius: 20px;
+            box-shadow: 5px 5px 20px rgba(var(--gray), 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: right;
+            z-index: 999;
+            display: none;
+            right: 1em; /* Add this line to align to the right with 1em space */
+        }
+
+        #rectangle-pop-up-notification-success-box {
+        background: linear-gradient(to bottom right, var(--success) 40%, var(--secondary) 100%);
+        }
+
+        #rectangle-pop-up-notification-error-box,
+        #rectangle-pop-up-notification-error-box2 {
+        background: linear-gradient(to bottom left, var(--error) 40%, var(--orange) 100%);
+        }
+
+        #rectangle-pop-up-notification-error-box {
+        bottom: 7em;
+        }
+
+        #rectangle-pop-up-notification-error-box2 {
+        top: 7em;
+        }
+
+        .rectangle-pop-up-notification-face {
+        position: absolute;
+        width: 22%;
+        height: 22%;
+        background: var(--white);
+        border-radius: 50%;
+        border: 1px solid var(--dark);
+        top: 11%;
+        left: 96px;
+        z-index: 2;
+        animation: bounce 1s ease-in infinite;
+        }
+
+        .rectangle-pop-up-notification-face2 {
+        position: absolute;
+        width: 22%;
+        height: 22%;
+        background: var(--white);
+        border-radius: 50%;
+        border: 1px solid var(--dark);
+        top: 11%;
+        left: 37.5%;
+        z-index: 2;
+        animation: roll 3s ease-in-out infinite;
+        }
+
+        .rectangle-pop-up-notification-eye {
+        position: absolute;
+        width: 5px;
+        height: 5px;
+        background: var(--dark);
+        border-radius: 50%;
+        top: 30%;
+        left: 20%;
+        }
+
+        .rectangle-pop-up-notification-eye.right {
+        left: 68%;
+        }
+
+        .rectangle-pop-up-notification-mouth {
+        position: absolute;
+        top: 33%;
+        left: 41%;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        }
+
+        .rectangle-pop-up-notification-mouth.happy {
+        border: 2px solid;
+        border-color: transparent var(--dark) var(--dark) transparent;
+        transform: rotate(45deg);
+        }
+
+        .rectangle-pop-up-notification-mouth.sad {
+        top: 39%;
+        border: 2px solid;
+        border-color: var(--dark) transparent transparent var(--dark);
+        transform: rotate(45deg);
+        }
+
+        .rectangle-pop-up-notification-shadow {
+        position: absolute;
+        width: 21%;
+        height: 3%;
+        opacity: 0.5;
+        background: var(--dark);
+        left: 40%;
+        top: 33%;
+        border-radius: 50%;
+        z-index: 1;
+        }
+
+        .rectangle-pop-up-notification-shadow.move {
+        animation: move 3s ease-in-out infinite;
+        }
+
+        .rectangle-pop-up-notification-shadow.scale {
+        animation: scale 1s ease-in infinite;
+        }
+
+        .rectangle-pop-up-notification-message {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            height: 40%;
+            top: 37%;
+        }
+
+        .rectangle-pop-up-notification-button-box {
+            position: absolute;
+            width: 50%;
+            height: 15%;
+            top: 76%;
+            left: 25%;
+            
+            /* Incorporated styles from button.ghost */
+            background-color: transparent;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 20px;
+            
+            /* Kept from original */
+            outline: 0;
+            overflow: hidden;
+            
+            /* Combined transitions */
+            transition: all 0.5s ease;
+        }
+
+        .rectangle-pop-up-notification-button-box:hover{
+            background: #FFFFFF;
+            color: #242424;
+            border: 2px solid #FFFFFF;
+            transform: scale(1.10);
+            box-shadow: 0 0 5px #FFFFFF,
+                        0 0 25px #FFFFFF,
+                        0 0 50px #FFFFFF,
+                        0 0 200px #FFFFFF;
+            transition: all 0.5s ease;
+        }
+
+        button.rectangle-pop-up-notification-button-box:hover{
+            background: #FFFFFF;
+            color: #242424;
+            transform: scale(1.10);
+            box-shadow: 0 0 5px #FFFFFF,
+                        0 0 25px #FFFFFF,
+                        0 0 50px #FFFFFF,
+                        0 0 200px #FFFFFF;
+            transition: all 0.5s ease;
+        }
+
+        @keyframes bounce {
+        50% {
+            transform: translateY(-10px);
+        }
+        }
+
+        @keyframes roll {
+        0% {
+            transform: rotate(0deg);
+            left: 25%;
+        }
+        50% {
+            left: 60%;
+            transform: rotate(168deg);
+        }
+        100% {
+            transform: rotate(0deg);
+            left: 25%;
+        }
+        }
+
+        @keyframes move {
+        0% {
+            left: 25%;
+        }
+        50% {
+            left: 60%;
+        }
+        100% {
+            left: 25%;
+        }
+        }
+
+        @keyframes scale {
+        50% {
+            transform: scale(0.9);
+        }
+        }
+
+    </style>
+</head>
+<body>
+    <body>
+        <div class="area">
+            <ul class="circles">
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+            </ul>
+        </div>
+
+        <div id="select-container">
+            <div class="language-label">Language</div>
+            <ul>
+                <li lang-selection="EN" tooltip="English" flow="down" onclick="changeLanguage('en')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg" alt="English">
+                </li>
+                <li lang-selection="HE" tooltip="Hebrew" flow="down" onclick="changeLanguage('he')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Flag_of_Israel.svg" alt="עברית">
+                </li>
+                <li lang-selection="ES" tooltip="Spanish" flow="down" onclick="changeLanguage('es-MX')">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg" alt="Español">
+                </li>
+                <li lang-selection="DE" tooltip="German" flow="down" onclick="changeLanguage('de')">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/b/ba/Flag_of_Germany.svg" alt="Deutsch">
+                </li>
+            </ul>
+        </div>
+        
+        <div id="file-processing-popup" class="file-processing-popup">
+            <div class="file-processing-popup-main">
+                <div class="file-processing-popup-content">
+                    <p id="file-processing-popup-message-line1" class="file-processing-popup-message-text">
+                        <span class="filename-span" dir="auto"></span>
+                    </p>
+                    <p id="file-processing-popup-message-line2" class="file-processing-popup-message-text"></p>
+                    <div class="file-processing-popup-progress">
+                        <div id="file-processing-popup-progress-done" class="file-processing-popup-progress-done" data-done="0"></div>
+                    </div>
+                    <div class="file-processing-popup-button-container">
+                        <a href="#" id="file-processing-popup-download-button" class="file-processing-popup-button type--B" disabled>
+                            <div class="button__line"></div>
+                            <div class="button__line"></div>
+                            <span id="downloadButton" class="button__text" data-lang-en="Download" data-lang-he="הורדה" data-lang-es="Descargar" data-lang-de="Herunterladen">Download</span>
+                            <div class="button__drow1"></div>
+                            <div class="button__drow2"></div>
+                        </a>
+                        <a href="#" id="file-processing-popup-next-button" class="file-processing-popup-button type--C">
+                            <div class="button__line"></div>
+                            <div class="button__line"></div>
+                            <span class="button__text" data-lang-en="Proceed" data-lang-he="המשך" data-lang-es="Continuar" data-lang-de="Fortfahren">Proceed</span>
+                            <div class="button__drow1"></div>
+                            <div class="button__drow2"></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>        
+
+        <div id="rectangle-pop-up-notification-container" class="rectangle-pop-up-notification-container">
+            <div id="rectangle-pop-up-notification-error-box" class="rectangle-pop-up-notification-box">
+                <div class="rectangle-pop-up-notification-face2">
+                    <div class="rectangle-pop-up-notification-eye"></div>
+                    <div class="rectangle-pop-up-notification-eye right"></div>
+                    <div class="rectangle-pop-up-notification-mouth sad"></div>
+                </div>
+                <div class="rectangle-pop-up-notification-shadow move"></div>
+                <div class="rectangle-pop-up-notification-message">
+                    <h1 class="alert" data-lang-en="Error!" data-lang-he="!שגיאה" data-lang-es="¡Error!" data-lang-de="Fehler!">Error!</h1>
+                    <p data-lang-en="Invalid Padding" data-lang-he="ריפוד לא חוקי" data-lang-es="Relleno inválido" data-lang-de="Ungültige Polsterung">Invalid Padding</p>
+                </div>
+                <button class="rectangle-pop-up-notification-button-box" data-lang-en="OK" data-lang-he="אוקיי" data-lang-es="OK" data-lang-de="OK" onclick="closeNotification('rectangle-pop-up-notification-error-box')">OK</button>
+            </div>
+            <div id="rectangle-pop-up-notification-error-box2" class="rectangle-pop-up-notification-box">
+                <div class="rectangle-pop-up-notification-face2">
+                    <div class="rectangle-pop-up-notification-eye"></div>
+                    <div class="rectangle-pop-up-notification-eye right"></div>
+                    <div class="rectangle-pop-up-notification-mouth sad"></div>
+                </div>
+                <div class="rectangle-pop-up-notification-shadow move"></div>
+                <div class="rectangle-pop-up-notification-message">
+                    <h1 class="alert" data-lang-en="Error!" data-lang-he="!שגיאה" data-lang-es="¡Error!" data-lang-de="Fehler!">Error!</h1>
+                    <p data-lang-en="Integrity Verification Failed." data-lang-he="אימות השלמות נכשל." data-lang-es="La verificación de integridad falló." data-lang-de="Integritätsprüfung fehlgeschlagen.">Integrity Verification Failed.</p>
+                </div>
+                <button class="rectangle-pop-up-notification-button-box" data-lang-en="OK" data-lang-he="אוקיי" data-lang-es="OK" data-lang-de="OK" onclick="closeNotification('rectangle-pop-up-notification-error-box2')">OK</button>
+            </div>
+            <div id="rectangle-pop-up-notification-success-box" class="rectangle-pop-up-notification-box">
+                <div class="rectangle-pop-up-notification-face">
+                    <div class="rectangle-pop-up-notification-eye"></div>
+                    <div class="rectangle-pop-up-notification-eye right"></div>
+                    <div class="rectangle-pop-up-notification-mouth happy"></div>
+                </div>
+                <div class="rectangle-pop-up-notification-shadow scale"></div>
+                <div class="rectangle-pop-up-notification-message">
+                    <h1 class="alert" data-lang-en="Success!" data-lang-he="!הצלחה" data-lang-es="¡Éxito!" data-lang-de="Erfolg!">Success!</h1>
+                    <p data-lang-en="Integrity Verified Successfully." data-lang-he="השלמות אומתה בהצלחה." data-lang-es="Integridad verificada con éxito." data-lang-de="Integrität erfolgreich verifiziert.">Integrity Verified Successfully.</p>
+                </div>
+                <button class="rectangle-pop-up-notification-button-box" data-lang-en="OK" data-lang-he="אוקיי" data-lang-es="OK" data-lang-de="OK" onclick="closeNotification('rectangle-pop-up-notification-success-box')">OK</button>
+            </div>
+        </div>
+        
+        <div id="notification-container" class="notification-container"></div>
+
+        <div id="popup-form-container">
+            <div class="popup-table-form">
+                <h1 id="encryption-header" style="display: none;" data-lang-en="Files Selected for Encryption" data-lang-he="קבצים שנבחרו להצפנה" data-lang-es="Archivos seleccionados para encriptación" data-lang-de="Für Verschlüsselung ausgewählte Dateien">Files Selected for Encryption</h1>
+                <h1 id="decryption-header" style="display: none;" data-lang-en="Files Selected for Decryption" data-lang-he="קבצים שנבחרו לפענוח" data-lang-es="Archivos seleccionados para desencriptación" data-lang-de="Für Entschlüsselung ausgewählte Dateien">Files Selected for Decryption</h1>
+                <div class="tbl-header">
+                    <table cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 89%;" data-lang-en="File Name" data-lang-he="שם הקובץ" data-lang-es="Nombre del archivo" data-lang-de="Dateiname">File Name</th>
+                                <th style="width: 11%;" data-lang-en="Size (MB)" data-lang-he="גודל (MB)" data-lang-es="Tamaño (MB)" data-lang-de="Größe (MB)">Size (MB)</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div class="tbl-content">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                        <tbody id="file-list">
+                            <!-- File rows will be appended here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <button class="ghost" onclick="hidePopupForm()" data-lang-en="OK" data-lang-he="אוקיי" data-lang-es="OK" data-lang-de="OK">OK</button>
+            </div>
+        </div>
+        
+        <div class="container" id="container">
+            <div class="form-container sign-up-container">
+                <form action="#">
+                    <h1 style="margin-bottom: 20px" data-lang-en="Decrypt Files" data-lang-he="פענח קבצים" data-lang-es="Descifrar archivos" data-lang-de="Dateien entschlüsseln">Decrypt Files</h1>
+                    <div class="hidden-input-container">
+                        <input type="password" id="decrypt-key" placeholder="Key" data-lang-en="Key" data-lang-he="מפתח" data-lang-es="Clave" data-lang-de="Schlüssel">
+                        <ion-icon name="eye-outline" onclick="togglePasswordVisibility('decrypt-key')"></ion-icon>
+                    </div>
+                    <div class="hidden-input-container">
+                        <input type="password" id="decrypt-iterations" placeholder="PBKDF2 Iterations" data-lang-en="PBKDF2 Iterations" data-lang-he="חזרות PBKDF2" data-lang-es="Iteraciones PBKDF2" data-lang-de="PBKDF2-Iterationen">
+                        <ion-icon name="eye-outline" onclick="togglePasswordVisibility('decrypt-iterations')"></ion-icon>
+                    </div>
+                    <button type="button" onclick="selectFiles('decrypt')" data-lang-en="Select Files" data-lang-he="בחר קבצים" data-lang-es="Seleccionar archivos" data-lang-de="Dateien auswählen">Select Files</button>
+                    <button type="button" onclick="viewSelectedFiles('decrypt')" data-lang-en="View Selected Files" data-lang-he="הצג קבצים שנבחרו" data-lang-es="Ver archivos seleccionados" data-lang-de="Ausgewählte Dateien anzeigen">View Selected Files</button>
+                    <button type="button" onclick="decryptFiles()" data-lang-en="Decrypt Files" data-lang-he="פענח קבצים" data-lang-es="Descifrar archivos" data-lang-de="Dateien entschlüsseln">Decrypt Files</button>
+                    <div id="decrypt-file-list" class="file-list"></div>
+                </form>
+            </div>
+            <div class="form-container sign-in-container">
+                <form action="#">
+                    <h1 style="margin-bottom: 20px" data-lang-en="Encrypt Files" data-lang-he="הצפן קבצים" data-lang-es="Cifrar archivos" data-lang-de="Dateien verschlüsseln">Encrypt Files</h1>
+                    <div class="hidden-input-container">
+                        <input type="password" id="encrypt-key" placeholder="Key" data-lang-en="Key" data-lang-he="מפתח" data-lang-es="Clave" data-lang-de="Schlüssel">
+                        <ion-icon name="eye-outline" onclick="togglePasswordVisibility('encrypt-key')"></ion-icon>
+                    </div>
+                    <div class="hidden-input-container">
+                        <input type="password" id="encrypt-iterations" placeholder="PBKDF2 Iterations" data-lang-en="PBKDF2 Iterations" data-lang-he="חזרות PBKDF2" data-lang-es="Iteraciones PBKDF2" data-lang-de="PBKDF2-Iterationen">
+                        <ion-icon name="eye-outline" onclick="togglePasswordVisibility('encrypt-iterations')"></ion-icon>
+                    </div>
+                    <button type="button" onclick="selectFiles('encrypt')" data-lang-en="Select Files" data-lang-he="בחר קבצים" data-lang-es="Seleccionar archivos" data-lang-de="Dateien auswählen">Select Files</button>
+                    <button type="button" onclick="generateRandomKey()" data-lang-en="Generate Random Values" data-lang-he="צור ערכים אקראיים" data-lang-es="Generar valores aleatorios" data-lang-de="Zufallswerte generieren">Generate Random Values</button>
+                    <button type="button" onclick="viewSelectedFiles('encrypt')" data-lang-en="View Selected Files" data-lang-he="הצג קבצים שנבחרו" data-lang-es="Ver archivos seleccionados" data-lang-de="Ausgewählte Dateien anzeigen">View Selected Files</button>
+                    <button type="button" onclick="encryptFiles()" data-lang-en="Encrypt Files" data-lang-he="הצפן קבצים" data-lang-es="Cifrar archivos" data-lang-de="Dateien verschlüsseln">Encrypt Files</button>
+                    <div id="encrypt-file-list" class="file-list"></div>
+                </form>
+            </div>
+            <div class="overlay-container">
+                <div class="overlay">
+                    <div class="overlay-panel overlay-left">
+                        <h1 data-lang-en="Encrypt Files" data-lang-he="הצפן קבצים" data-lang-es="Cifrar archivos" data-lang-de="Dateien verschlüsseln">Encrypt Files</h1>
+                        <p data-lang-en="Encrypt your files with AES-256 CBC" data-lang-he="הצפן את הקבצים שלך עם AES-256 CBC" data-lang-es="Cifra tus archivos con AES-256 CBC" data-lang-de="Verschlüsseln Sie Ihre Dateien mit AES-256 CBC">Encrypt your files with AES-256 CBC</p>
+                        <button class="ghost" id="signIn" data-lang-en="Encrypt" data-lang-he="הצפן" data-lang-es="Cifrar" data-lang-de="Verschlüsseln">Encrypt</button>
+                    </div>
+                    <div class="overlay-panel overlay-right">
+                        <h1 data-lang-en="Decrypt Files" data-lang-he="פענח קבצים" data-lang-es="Descifrar archivos" data-lang-de="Dateien entschlüsseln">Decrypt Files</h1>
+                        <p data-lang-en="Decrypt your files with AES-256 CBC" data-lang-he="פענח את הקבצים שלך עם AES-256 CBC" data-lang-es="Descifra tus archivos con AES-256 CBC" data-lang-de="Entschlüsseln Sie Ihre Dateien mit AES-256 CBC">Decrypt your files with AES-256 CBC</p>
+                        <button class="ghost" id="signUp" data-lang-en="Decrypt" data-lang-he="פענח" data-lang-es="Descifrar" data-lang-de="Entschlüsseln">Decrypt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="additional-container">
+            <h2 data-lang-en="About" data-lang-he="אודות" data-lang-es="Acerca de" data-lang-de="Über">About</h2>
+            <p data-lang-en="The In-Browser File Encrypter is a simple web application that enables you to securely encrypt your files directly in your browser using the AES-256 encryption algorithm in CBC mode. This app is designed to encrypt the data locally, so not a single bit of your data is supposed to leave your computer. For added security, you can even disconnect your computer from the internet once the page is fully loaded. Try it now and keep your files safe!" 
+               data-lang-he="מצפין הקבצים בדפדפן הוא יישום אינטרנט פשוט המאפשר לך להצפין את הקבצים שלך באופן מאובטח ישירות בדפדפן שלך באמצעות אלגוריתם ההצפנה AES-256 במצב CBC. האפליקציה מתוכננת להצפין את הנתונים באופן מקומי, כך שאף סיבית מהנתונים שלך לא אמורה לעזוב את המחשב שלך. לאבטחה נוספת, תוכל אפילו לנתק את המחשב שלך מהאינטרנט לאחר שהדף נטען במלואו. נסה עכשיו ושמור על הקבצים שלך בטוחים!"
+               data-lang-es="El Encriptador de Archivos en el Navegador es una aplicación web simple que te permite encriptar tus archivos de forma segura directamente en tu navegador utilizando el algoritmo de encriptación AES-256 en modo CBC. Esta aplicación está diseñada para encriptar los datos localmente, por lo que ni un solo bit de tus datos debería salir de tu computadora. Para mayor seguridad, incluso puedes desconectar tu computadora de internet una vez que la página esté completamente cargada. ¡Pruébalo ahora y mantén tus archivos seguros!"
+               data-lang-de="Der In-Browser File Encrypter ist eine einfache Webanwendung, mit der Sie Ihre Dateien direkt in Ihrem Browser mit dem AES-256-Verschlüsselungsalgorithmus im CBC-Modus sicher verschlüsseln können. Diese Anwendung ist so konzipiert, dass die Daten lokal verschlüsselt werden, so dass kein einziges Bit Ihrer Daten Ihren Computer verlassen soll. Für zusätzliche Sicherheit können Sie Ihren Computer sogar vom Internet trennen, sobald die Seite vollständig geladen ist. Probieren Sie es jetzt aus und schützen Sie Ihre Daten!">
+                The In-Browser File Encrypter is a simple web application that enables you to securely encrypt your files directly in your browser using the AES-256 encryption algorithm in CBC mode. This app is designed to encrypt the data locally, so not a single bit of your data is supposed to leave your computer. For added security, you can even disconnect your computer from the internet once the page is fully loaded. Try it now and keep your files safe!
+            </p>
+            <p style="color: red; font-weight: bold;" 
+               data-lang-en="This application is provided with no warranty or guarantees of any kind." 
+               data-lang-he=".יישום זה מסופק ללא אחריות או ערבויות מכל סוג שהוא" 
+               data-lang-es="Esta aplicación se proporciona sin garantías de ningún tipo." 
+               data-lang-de="Diese Anwendung wird ohne jegliche Gewährleistung oder Garantien bereitgestellt.">
+                This application is provided with no warranty or guarantees of any kind.
+            </p>
+            <p style="color: red; font-weight: bold;" 
+               data-lang-en="Use it at your own risk!" 
+               data-lang-he="!השימוש בו הוא על אחריותך בלבד" 
+               data-lang-es="¡Úsalo bajo tu propio riesgo!" 
+               data-lang-de="Verwenden Sie es auf eigene Gefahr!">
+                Use it at your own risk!
+            </p>
+        </div>
+        
+        <div class="additional-container">
+            <h2 data-lang-en="Credit" data-lang-he="קרדיט" data-lang-es="Créditos" data-lang-de="Quellenangabe">Credit</h2>
+            <p><span class="custom-links"><a href="https://codepen.io/mohaiman/pen/MQqMyo" target="_blank">Pure Css Animated Background</a> by <a href="https://codepen.io/mohaiman" target="_blank">Mohammad Abdul Mohaiman</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/__e8e0f2257b/pen/NxMpGq" target="_blank">Animated Login Form</a> by <a href="https://codepen.io/__e8e0f2257b" target="_blank">Munsif Mujtaba</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/sowg/pen/qBXjXoE" target="_blank">Finance Mobile Application-UX/UI Design Screen One</a> by <a href="https://codepen.io/sowg" target="_blank">S G</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/FlorinPop17/pen/vPKWjd" target="_blank">Weekly Coding Challenge #1 - Double slider Sign in/up Form - Desktop Only</a> by <a href="https://codepen.io/FlorinPop17" target="_blank">Florin Pop</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/ferhatatagun/pen/oNNGdyX" target="_blank">Custom Language Selector</a> by <a href="https://codepen.io/ferhatatagun" target="_blank">Ferhat Atagün</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/HighFlyer/pen/WNXRZBv" target="_blank">Neon Button</a> by <a href="https://codepen.io/HighFlyer" target="_blank">Thea</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/nikhil8krishnan/pen/WvYPvv" target="_blank">Fixed table header</a> by <a href="https://codepen.io/nikhil8krishnan" target="_blank">Nikhil Krishnan</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/FlorinPop17/pen/xxORmaB" target="_blank">Push Notifications</a> by <a href="https://codepen.io/nikhil8krishnan" target="_blank">Nikhil Krishnan</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/ash_creator/pen/oNyNbNO" target="_blank">パステルドローなボタン</a> by <a href="https://codepen.io/ash_creator" target="_blank">あしざわ - Webクリエイター</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/ash_creator/pen/zYaPZLB" target="_blank">すりガラスなプロフィールカード</a> by <a href="https://codepen.io/ash_creator" target="_blank">あしざわ - Webクリエイター</a></span></p>
+            <p><span class="custom-links"><a href="https://codepen.io/juliepark/pen/vjMOKQ" target="_blank">Daily UI#011 | Flash Message (Error/Success)</a> by <a href="https://codepen.io/juliepark" target="_blank">Julie Park</a></span></p>
+        </div>
+    
+        <footer>
+            <p>Made by <a target="_blank" href="https://www.github.com/Northstrix">Maxim Bortnikov</a> with the help of <a target="_blank" href="https://www.perplexity.ai/">Perplexity</a></p>
+        </footer>
+    </body>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        const popup = document.querySelector('.file-processing-popup');
+        const popupMain = document.querySelector('.file-processing-popup-main');
+
+        popup.addEventListener('mousemove', (e) => {
+            const rect = popup.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const deltaX = (x - centerX) / centerX;
+            const deltaY = (y - centerY) / centerY;
+
+            popupMain.style.transform = `rotateY(${deltaX * 10}deg) rotateX(${-deltaY * 10}deg)`;
+        });
+
+        popup.addEventListener('mouseleave', () => {
+            popupMain.style.transform = 'rotateY(0deg) rotateX(0deg)';
+        });
+
+
+        const signUpButton = document.getElementById('signUp');
+        const signInButton = document.getElementById('signIn');
+        const container = document.getElementById('container');
+        const downloadButton = document.getElementById("downloadButton");
+
+        // Arrays to store selected files information
+        let FilesToBeEncrypted = [];
+        let FilesToBeDecrypted = [];
+
+        signUpButton.addEventListener('click', () => {
+            container.classList.add("right-panel-active");
+        });
+
+        signInButton.addEventListener('click', () => {
+            container.classList.remove("right-panel-active");
+        });
+
+        function toggleLanguageMenu() {
+            const menu = document.querySelector('.language-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function changeLanguage(lang) {
+            document.documentElement.lang = lang; // Set the language attribute on the <html> element
+            document.querySelectorAll('[data-lang-' + lang + ']').forEach(elem => {
+                if (elem.tagName === 'INPUT') {
+                    elem.placeholder = elem.getAttribute('data-lang-' + lang);
+                } else {
+                    elem.textContent = elem.getAttribute('data-lang-' + lang);
+                }
+            });
+            
+            // Update the new headers
+            const encryptionHeader = document.getElementById('encryption-header');
+            const decryptionHeader = document.getElementById('decryption-header');
+            encryptionHeader.textContent = encryptionHeader.getAttribute('data-lang-' + lang);
+            decryptionHeader.textContent = decryptionHeader.getAttribute('data-lang-' + lang);
+        }
+
+
+        // Initialize with English
+        changeLanguage('en');
+
+        // Add click event listeners to the language options
+        document.querySelectorAll('#select-container li').forEach(li => {
+            li.addEventListener('click', function() {
+                const lang = this.getAttribute('lang-selection').toLowerCase();
+                changeLanguage(lang);
+            });
+        });
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.name = 'eye-off-outline';
+            } else {
+                input.type = 'password';
+                icon.name = 'eye-outline';
+            }
+        }
+
+        function generateRandomKey() {
+            // Generate a cryptographically secure random key
+            const length = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (2**32) * (64 - 40 + 1)) + 40;
+            const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+            const randomValues = new Uint32Array(length);
+            crypto.getRandomValues(randomValues);
+            
+            let key = "";
+            for (let i = 0; i < length; i++) {
+                const randomIndex = randomValues[i] % charset.length;
+                key += charset[randomIndex];
+            }
+            
+            // Generate a random number of iterations
+            const iterations = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (2**32) * (10000000 - 500000 + 1)) + 500000;
+            
+            // Set the key and iterations in the encrypt tab
+            const keyInput = document.getElementById('encrypt-key');
+            const iterationsInput = document.getElementById('encrypt-iterations');
+            keyInput.value = key;
+            iterationsInput.value = iterations;
+            
+            // Show the key and iterations (temporarily change input type to text)
+            keyInput.type = 'text';
+            iterationsInput.type = 'text';
+            
+            // Change them back to password after 5 seconds
+            setTimeout(() => {
+                keyInput.type = 'password';
+                iterationsInput.type = 'password';
+            }, 5000);
+        }
+
+        function formatFileSize(bytes) {
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function selectFiles(mode) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true; // Allow multiple file selection
+            input.onchange = (event) => {
+                const files = Array.from(event.target.files);
+                const selectedFiles = files
+                    .filter(file => file.size > 0) // Exclude empty files
+                    .map(file => ({
+                        name: file.name,
+                        size: file.size,
+                        path: file.webkitRelativePath || file.name, // Use file.webkitRelativePath if available
+                        file: file
+                    }));
+                
+                if (mode === 'encrypt') {
+                    FilesToBeEncrypted = selectedFiles;
+                    //console.log('Files selected for encryption:', FilesToBeEncrypted);
+                } else if (mode === 'decrypt') {
+                    FilesToBeDecrypted = selectedFiles;
+                    //console.log('Files selected for decryption:', FilesToBeDecrypted);
+                }
+            };
+            input.click();
+        }
+
+        function viewSelectedFiles(mode) {
+            const files = mode === 'encrypt' ? FilesToBeEncrypted : FilesToBeDecrypted;
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = ''; // Clear existing list
+            
+            // Show the appropriate header and hide the other
+            const encryptionHeader = document.getElementById('encryption-header');
+            const decryptionHeader = document.getElementById('decryption-header');
+            
+            if (mode === 'encrypt') {
+                encryptionHeader.style.display = 'block';
+                decryptionHeader.style.display = 'none';
+            } else {
+                encryptionHeader.style.display = 'none';
+                decryptionHeader.style.display = 'block';
+            }
+            
+            // Create table header
+            const headerRow = document.createElement('tr');
+            const nameHeader = document.createElement('th');
+            const sizeHeader = document.createElement('th');
+            
+            // Set column widths for header
+            nameHeader.style.width = '89%';
+            sizeHeader.style.width = '11%';
+            
+            headerRow.appendChild(nameHeader);
+            headerRow.appendChild(sizeHeader);
+            fileList.appendChild(headerRow);
+            
+            files.forEach(file => {
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                const sizeCell = document.createElement('td');
+                
+                nameCell.textContent = file.path; // Show full path
+                sizeCell.textContent = (file.size / (1024 * 1024)).toFixed(2); // Size in MB without 'MB'
+                
+                // Set column widths for data cells
+                nameCell.style.width = '89%';
+                sizeCell.style.width = '11%';
+                
+                row.appendChild(nameCell);
+                row.appendChild(sizeCell);
+                fileList.appendChild(row);
+            });
+
+            showPopupForm();
+        }
+
+        function showPopupForm() {
+            document.getElementById("popup-form-container").style.display = "flex";
+        }
+
+        function hidePopupForm() {
+            document.getElementById("popup-form-container").style.display = "none";
+        }
+
+        function encryptAES256ECB(block, key) {
+            // Check input lengths
+            if (block.length !== 16 || key.length !== 32) {
+                throw new Error('Invalid input lengths. Block must be 16 bytes and key must be 32 bytes.');
+            }
+
+            // Convert Uint8Array to WordArray
+            const blockWords = CryptoJS.lib.WordArray.create(block);
+            const keyWords = CryptoJS.lib.WordArray.create(key);
+
+            // Encrypt
+            const encrypted = CryptoJS.AES.encrypt(blockWords, keyWords, {
+                mode: CryptoJS.mode.ECB,
+                padding: CryptoJS.pad.NoPadding
+            });
+
+            // Convert the result back to Uint8Array
+            const encryptedArray = new Uint8Array(encrypted.ciphertext.words.length * 4);
+            for (let i = 0; i < encrypted.ciphertext.words.length; i++) {
+                const word = encrypted.ciphertext.words[i];
+                encryptedArray[i*4] = (word >> 24) & 0xff;
+                encryptedArray[i*4 + 1] = (word >> 16) & 0xff;
+                encryptedArray[i*4 + 2] = (word >> 8) & 0xff;
+                encryptedArray[i*4 + 3] = word & 0xff;
+            }
+
+            return encryptedArray;
+        }
+
+        function decryptAES256ECB(block, key) {
+            // Check input lengths
+            if (block.length !== 16 || key.length !== 32) {
+                throw new Error('Invalid input lengths. Block must be 16 bytes and key must be 32 bytes.');
+            }
+
+            // Convert Uint8Array to WordArray
+            const blockWords = CryptoJS.lib.WordArray.create(block);
+            const keyWords = CryptoJS.lib.WordArray.create(key);
+
+            // Decrypt
+            const decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: blockWords },
+                keyWords,
+                {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.NoPadding
+                }
+            );
+
+            // Convert the result back to Uint8Array
+            const decryptedArray = new Uint8Array(decrypted.words.length * 4);
+            for (let i = 0; i < decrypted.words.length; i++) {
+                const word = decrypted.words[i];
+                decryptedArray[i*4] = (word >> 24) & 0xff;
+                decryptedArray[i*4 + 1] = (word >> 16) & 0xff;
+                decryptedArray[i*4 + 2] = (word >> 8) & 0xff;
+                decryptedArray[i*4 + 3] = word & 0xff;
+            }
+
+            return decryptedArray;
+        }
+
+        async function deriveKey(password, salt, iterations) {
+            const encoder = new TextEncoder();
+            const passwordBuffer = encoder.encode(password);
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw",
+                passwordBuffer,
+                "PBKDF2",
+                false,
+                ["deriveBits"]
+            );
+            const derivedBits = await window.crypto.subtle.deriveBits(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: iterations,
+                    hash: "SHA-512"
+                },
+                keyMaterial,
+                96 * 8 // 96 bytes (768 bits)
+            );
+            return new Uint8Array(derivedBits);
+        }
+
+        async function computeHMAC(key, data) {
+            const hmacKey = await window.crypto.subtle.importKey(
+                "raw",
+                key,
+                { name: "HMAC", hash: "SHA-512" },
+                false,
+                ["sign"]
+            );
+            const signature = await window.crypto.subtle.sign(
+                "HMAC",
+                hmacKey,
+                data
+            );
+            return new Uint8Array(signature);
+        }
+
+        const localizations = {
+            'en': {
+                'no-files-selected': "No Files Selected",
+                'key-entry-empty': "Key entry is empty",
+                'invalid-iterations': "Number of PBKDF2 iterations must be more than 0",
+                'encrypt-files': "Encrypt Files",
+                'encryption-error': "An error occurred during encryption. Please try again.",
+                "decryption-error": "An error occurred during decryption. Please check your key and try again.",
+                'reading-content': "Reading the content of the \"{FILENAME}\" file...",
+                'generating-salt': "Generating salt for \"{FILENAME}\" file...",
+                'deriving-encryption-key': "Deriving the encryption key for the \"{FILENAME}\" file...\nPlease be patient. This might take a while.",
+                'deriving-decryption-key': "Deriving the decryption key for the \"{FILENAME}\" file...\nPlease be patient. This might take a while.",
+                'generating-iv': "Generating IV for \"{FILENAME}\" file...",
+                'computing-tag': "Computing a tag for the \"{FILENAME}\" file...\nPlease wait for a while.",
+                'encrypting-file': "Encrypting the \"{FILENAME}\" file...\nPlease wait for a while.",
+                'decrypting-file': "Decrypting the \"{FILENAME}\" file...\nPlease wait for a while.",
+                'empty-file-error': "The file \"{FILENAME}\" is empty and cannot be encrypted.",
+                'file-encrypted-success': "The file \"{FILENAME}\" has been encrypted successfully.",
+                'file-decrypted-success': "The file \"{FILENAME}\" has been decrypted successfully.",
+                'click-to-download': "Click the Download button to save the encrypted file.",
+                'encryption-complete': "All files have been encrypted successfully.",
+                'page-might-freeze': "Please note: The page might freeze during this step.",
+                'file-decrypted-err': "The file \"{FILENAME}\" has been decrypted with at least one error."
+            },
+            'he': {
+                'no-files-selected': "לא נבחרו קבצים",
+                'key-entry-empty': "שדה המפתח ריק",
+                'invalid-iterations': "0-מספר האיטרציות של PBKDF2 חייב להיות גדול מ",
+                'encrypt-files': "הצפן קבצים",
+                'encryption-error': ".אירעה שגיאה במהלך ההצפנה. אנא נסה שוב",
+                "decryption-error": "אירעה שגיאה במהלך פענוח ההצפנה. אנא בדוק את המפתח ונסה שוב.",
+                'reading-content': "...\"{FILENAME}\" קורא את התוכן של הקובץ",
+                'generating-salt': "...\"{FILENAME}\" יוצר מלח עבור הקובץ",
+                'deriving-encryption-key': "...\"{FILENAME}\" מפקת את מפתח ההצפנה עבור הקובץ\n.אנא היו סבלניים. זה עשוי לקחת זמן מה",
+                'deriving-decryption-key': "...\"{FILENAME}\" מפקת את מפתח הפענוח עבור הקובץ\n.אנא היו סבלניים. זה עשוי לקחת זמן מה",
+                'generating-iv': "...\"{FILENAME}\" יוצר IV עבור הקובץ",
+                'computing-tag': "...\"{FILENAME}\" מחשב תג עבור הקובץ\n.אנא המתן רגע",
+                'encrypting-file': "...\"{FILENAME}\" מצפין את הקובץ\n.אנא המתן רגע",
+                'decrypting-file': "...\"{FILENAME}\" מפענח את הקובץ\n.אנא המתן רגע",
+                'file-encrypted-success': ".הוצפן בהצלחה \"{FILENAME}\" הקובץ",
+                'file-decrypted-success': ".פוענח בהצלחה \"{FILENAME}\" הקובץ",
+                'click-to-download': ".לחץ על כפתור ההורדה כדי לשמור את הקובץ המוצפן",
+                'encryption-complete': ".כל הקבצים הוצפנו בהצלחה",
+                'page-might-freeze': ".שימו לב: ייתכן שהדף יקפא במהלך שלב זה",
+                'file-decrypted-err': ".פוענח עם לפחות שגיאה אחת \"{FILENAME}\" הקובץ"
+            },
+            'es': {
+                'no-files-selected': "No se han seleccionado archivos",
+                'key-entry-empty': "La entrada de la clave está vacía",
+                'invalid-iterations': "El número de iteraciones PBKDF2 debe ser mayor que 0",
+                'encrypt-files': "Encriptar archivos",
+                'encryption-error': "Ocurrió un error durante la encriptación. Por favor, intente de nuevo.",
+                "decryption-error": "Ocurrió un error durante el descifrado. Por favor, verifica tu clave e inténtalo de nuevo.",
+                'reading-content': "Leyendo el contenido del archivo \"{FILENAME}\"...",
+                'generating-salt': "Generando sal para el archivo \"{FILENAME}\"...",
+                'deriving-encryption-key': "Derivando la clave de encriptación para el archivo \"{FILENAME}\"...\nPor favor sea paciente. Esto puede tardar un poco.",
+                'deriving-decryption-key': "Derivando la clave de descifrado para el archivo \"{FILENAME}\"...\nPor favor, ten paciencia. Esto puede tardar un poco.",
+                'generating-iv': "Generando IV para el archivo \"{FILENAME}\"...",
+                'computing-tag': "Computando una etiqueta para el archivo \"{FILENAME}\"...\nPor favor espere un momento.",
+                'encrypting-file': "Encriptando el archivo \"{FILENAME}\"...\nPor favor espere un momento.",
+                'decrypting-file': "Descifrando el archivo \"{FILENAME}\"...\nPor favor, espera un momento.",
+                'file-encrypted-success': "El archivo \"{FILENAME}\" ha sido encriptado con éxito.",
+                'file-decrypted-success': "El archivo \"{FILENAME}\" ha sido descifrado con éxito.",
+                'click-to-download': "Haga clic en el botón Descargar para guardar el archivo encriptado.",
+                'encryption-complete': "Todos los archivos han sido encriptados con éxito.",
+                'page-might-freeze': "Por favor, tenga en cuenta: La página podría congelarse durante este paso.",
+                'file-decrypted-err': "El archivo \"{FILENAME}\" ha sido descifrado con al menos un error."
+            },
+            'de': {
+                'no-files-selected': "Keine Dateien ausgewählt",
+                'key-entry-empty': "Schlüsseleingabe ist leer",
+                'invalid-iterations': "Die Anzahl der PBKDF2-Iterationen muss größer als 0 sein",
+                'encrypt-files': "Dateien verschlüsseln",
+                'encryption-error': "Bei der Verschlüsselung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+                "decryption-error": "Ein Fehler ist während der Entschlüsselung aufgetreten. Bitte überprüfen Sie Ihren Schlüssel und versuchen Sie es erneut.",
+                'reading-content': "Lese den Inhalt der Datei \"{FILENAME}\"...",
+                'generating-salt': "Erzeuge Salz für die Datei \"{FILENAME}\"...",
+                'deriving-encryption-key': "Leite den Verschlüsselungsschlüssel für die Datei \"{FILENAME}\" ab...\nBitte haben Sie Geduld. Dies kann eine Weile dauern.",
+                'deriving-decryption-key': "Der Entschlüsselungsschlüssel für die Datei \"{FILENAME}\" wird abgeleitet...\nBitte haben Sie Geduld. Dies kann eine Weile dauern.",
+                'generating-iv': "Erzeuge IV für die Datei \"{FILENAME}\"...",
+                'computing-tag': "Berechne eine Markierung für die Datei \"{FILENAME}\"...\nBitte warten Sie einen Moment.",
+                'encrypting-file': "Verschlüssele die Datei \"{FILENAME}\"...\nBitte warten Sie einen Moment.",
+                'decrypting-file': "Entschlüssele die Datei \"{FILENAME}\"...\nBitte warten Sie einen Moment.",
+                'file-encrypted-success': "Die Datei \"{FILENAME}\" wurde erfolgreich verschlüsselt.",
+                'file-decrypted-success': "Die Datei \"{FILENAME}\" wurde erfolgreich entschlüsselt.",
+                'click-to-download': "Klicken Sie auf die Schaltfläche Herunterladen, um die verschlüsselte Datei zu speichern.",
+                'encryption-complete': "Alle Dateien wurden erfolgreich verschlüsselt.",
+                'page-might-freeze': "Bitte beachten: Die Seite könnte während dieses Schrittes einfrieren.",
+                'file-decrypted-err': "Die Datei \"{FILENAME}\" wurde mit mindestens einem Fehler entschlüsselt."
+            }
+        };
+
+        function getLocalizedString(key, lang = 'en') {
+            return localizations[lang][key] || localizations['en'][key];
+        }
+
+        async function saveDecryptedFile(originalFilename, encryptedChunks) {
+            const encryptedContent = new Blob(encryptedChunks);
+
+            // Function to check if a filename has an extension
+            function hasExtension(filename) {
+                return filename.includes('.') && filename.split('.').pop().length > 0;
+            }
+
+            // If the original filename doesn't have an extension, add ".bin"
+            const suggestedName = hasExtension(originalFilename) ? originalFilename : `${originalFilename}.bin`;
+
+            try {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: suggestedName,
+                    types: [{
+                        description: 'Decrypted File',
+                        accept: {
+                            'application/octet-stream': ['.bin', `.${suggestedName.split('.').pop()}`]
+                        }
+                    }],
+                });
+
+                const writable = await fileHandle.createWritable();
+                await writable.write(encryptedContent);
+                await writable.close();
+
+                console.log(`File saved as: ${suggestedName}`);
+            } catch (err) {
+                console.error('Error saving the decrypted file:', err);
+            }
+        }
+
+        async function saveEncryptedFile(originalFilename, encryptedChunks) {
+            const encryptedFilename = `${originalFilename}.encr`;
+            const encryptedContent = new Blob(encryptedChunks);
+
+            try {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: encryptedFilename,
+                    types: [{
+                        description: 'Encrypted File',
+                        accept: {'application/octet-stream': ['.encr']}
+                    }],
+                });
+
+                const writable = await fileHandle.createWritable();
+                await writable.write(encryptedContent);
+                await writable.close();
+
+                console.log(`File saved as: ${encryptedFilename}`);
+            } catch (err) {
+                console.error('Error saving the encrypted file:', err);
+            }
+        }
+
+        function showFileEncryptionCompletion(originalFilename, encryptedChunks) {
+            const downloadButton = document.getElementById('file-processing-popup-download-button');
+            const nextButton = document.getElementById('file-processing-popup-next-button');
+            const messageLine1 = document.getElementById('file-processing-popup-message-line1');
+            const messageLine2 = document.getElementById('file-processing-popup-message-line2');
+
+            const lang = document.documentElement.lang || 'en';
+            const filenameSpan = `<span class="filename-span" dir="auto">${originalFilename}</span>`;
+            messageLine1.innerHTML = getLocalizedString('file-encrypted-success', lang).replace('{FILENAME}', filenameSpan);
+            messageLine2.textContent = getLocalizedString('click-to-download', lang);
+
+            downloadButton.disabled = false;
+            downloadButton.onclick = () => {
+                saveEncryptedFile(originalFilename, encryptedChunks);
+            };
+
+            nextButton.style.display = 'block';
+            nextButton.onclick = () => {
+                document.getElementById('file-processing-popup').style.display = 'none';
+                resolveNextFile();
+            };
+        }
+
+        function showFileDecryptionCompletion(originalFilename, decryptedChunks) {
+            const downloadButton = document.getElementById('file-processing-popup-download-button');
+            const nextButton = document.getElementById('file-processing-popup-next-button');
+            const messageLine1 = document.getElementById('file-processing-popup-message-line1');
+            const messageLine2 = document.getElementById('file-processing-popup-message-line2');
+
+            const lang = document.documentElement.lang || 'en';
+            const filenameSpan = `<span class="filename-span" dir="auto">${originalFilename}</span>`;
+            messageLine1.innerHTML = getLocalizedString('file-decrypted-success', lang).replace('{FILENAME}', filenameSpan);
+            messageLine2.textContent = getLocalizedString('click-to-download', lang);
+
+            downloadButton.disabled = false;
+            downloadButton.onclick = () => {
+                closeNotification('rectangle-pop-up-notification-error-box');
+                closeNotification('rectangle-pop-up-notification-error-box2');
+                closeNotification('rectangle-pop-up-notification-success-box');
+                saveDecryptedFile(originalFilename, decryptedChunks);
+            };
+
+            nextButton.style.display = 'block';
+            nextButton.onclick = () => {
+                closeNotification('rectangle-pop-up-notification-error-box');
+                closeNotification('rectangle-pop-up-notification-error-box2');
+                closeNotification('rectangle-pop-up-notification-success-box');
+                document.getElementById('file-processing-popup').style.display = 'none';
+                resolveNextFile();
+            };
+        }
+
+        function showFileDecryptionCompletionWithErr(originalFilename, decryptedChunks) {
+            const downloadButton = document.getElementById('file-processing-popup-download-button');
+            const nextButton = document.getElementById('file-processing-popup-next-button');
+            const messageLine1 = document.getElementById('file-processing-popup-message-line1');
+            const messageLine2 = document.getElementById('file-processing-popup-message-line2');
+
+            const lang = document.documentElement.lang || 'en';
+            const filenameSpan = `<span class="filename-span" dir="auto">${originalFilename}</span>`;
+            messageLine1.innerHTML = getLocalizedString('file-decrypted-err', lang).replace('{FILENAME}', filenameSpan);
+            messageLine2.textContent = getLocalizedString('click-to-download', lang);
+
+            downloadButton.disabled = false;
+            downloadButton.onclick = () => {
+                closeNotification('rectangle-pop-up-notification-error-box');
+                closeNotification('rectangle-pop-up-notification-error-box2');
+                closeNotification('rectangle-pop-up-notification-success-box');
+                saveDecryptedFile(originalFilename, decryptedChunks);
+            };
+
+            nextButton.style.display = 'block';
+            nextButton.onclick = () => {
+                closeNotification('rectangle-pop-up-notification-error-box');
+                closeNotification('rectangle-pop-up-notification-error-box2');
+                closeNotification('rectangle-pop-up-notification-success-box');
+                document.getElementById('file-processing-popup').style.display = 'none';
+                resolveNextFile();
+            };
+        }
+
+        function resolveNextFile() {
+            downloadButton.classList.remove("disabled");
+            downloadButton.style.pointerEvents = "auto"; // Allow interactions
+            return new Promise(resolve => {
+                const nextButton = document.getElementById('file-processing-popup-next-button');
+                nextButton.onclick = () => {
+                    document.getElementById('file-processing-popup').style.display = 'none';
+                    resolve();
+                };
+            });
+        }
+
+        function showFileProcessingPopup(originalFilename, messageLine1, messageLine2) {
+            const popup = document.getElementById('file-processing-popup');
+            const messageLine1Elem = document.getElementById('file-processing-popup-message-line1');
+            const messageLine2Elem = document.getElementById('file-processing-popup-message-line2');
+            const progressDone = document.getElementById('file-processing-popup-progress-done');
+            const downloadButton = document.getElementById('file-processing-popup-download-button');
+            const nextButton = document.getElementById('file-processing-popup-next-button');
+
+            const lang = document.documentElement.lang || 'en';
+
+            // Get localized strings
+            const localizedMessageLine1 = getLocalizedString(messageLine1, lang).replace('{FILENAME}', `<span class="filename-span" dir="auto">${originalFilename}</span>`);
+            const localizedMessageLine2 = getLocalizedString(messageLine2, lang);
+
+            // Set the localized strings directly
+            messageLine1Elem.innerHTML = localizedMessageLine1;
+            messageLine2Elem.textContent = localizedMessageLine2;
+
+            progressDone.style.width = '0';
+            progressDone.style.opacity = '0';
+            downloadButton.disabled = true;
+            nextButton.style.display = 'none';
+            popup.style.display = 'block';
+        }
+
+        async function readFileByChunksForEncryption(file, password, iterations) {
+            showFileProcessingPopup(file.name, 'reading-content', 'please-wait');
+            const chunkSize = 256 * 1024;
+            const reader = new FileReader();
+            let offset = 0;
+            const totalSize = file.size;
+            const fileBytes = new Uint8Array(totalSize);
+
+            function readChunk(blob) {
+                return new Promise((resolve, reject) => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e.target.error);
+                    reader.readAsArrayBuffer(blob);
+                });
+            }
+
+            async function updateProgressWithDelay(progress) {
+                updateFileProcessingProgress(progress);
+                // Introduce a small delay to allow the browser to update the UI
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            while (offset < totalSize) {
+                const chunk = file.slice(offset, offset + chunkSize);
+                const arrayBuffer = await readChunk(chunk);
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                // Copy chunk to fileBytes array
+                fileBytes.set(uint8Array, offset);
+
+                // Update progress with delay
+                const progress = ((offset + uint8Array.length) / totalSize * 100).toFixed(2);
+                await updateProgressWithDelay(parseFloat(progress));
+
+                offset += uint8Array.length;
+            }
+
+            // After reading the entire file, pass the array to encryptReadFile
+            encryptReadFile(fileBytes, password, iterations, file.name);
+        }
+
+        function updateFileProcessingProgress(percentage) {
+            const progressBar = document.getElementById('file-processing-popup-progress-done');
+            if (progressBar) {
+                //console.log(`Operation progress: ${percentage.toFixed(2)}%`);
+                const progressDone = document.getElementById('file-processing-popup-progress-done');
+                progressDone.style.width = `${percentage}%`;
+                progressDone.style.opacity = '1';
+                progressDone.textContent = `${percentage.toFixed(2)}%`;
+            }
+        }
+
+        let resolveNextFilePromise;
+
+        function waitForNextFile() {
+            return new Promise(resolve => {
+                resolveNextFilePromise = resolve;
+                const nextButton = document.getElementById('file-processing-popup-next-button');
+                const popup = document.getElementById('file-processing-popup');
+
+                nextButton.onclick = () => {
+                    popup.style.display = 'none';
+                    resolve();
+                };
+
+                // Add this to handle the case when the popup is closed without clicking the next button
+                popup.addEventListener('click', (event) => {
+                    if (event.target === popup) {
+                        popup.style.display = 'none';
+                        resolve();
+                    }
+                }, { once: true });
+            });
+        }
+
+        async function encryptFiles() {
+            const lang = document.documentElement.lang || 'en';
+            const keyInput = document.getElementById('encrypt-key');
+            const iterationsInput = document.getElementById('encrypt-iterations');
+
+            if (FilesToBeEncrypted.length === 0) {
+                showNotification(getLocalizedString('no-files-selected', lang), true);
+                return;
+            }
+
+            if (!keyInput.value) {
+                showNotification(getLocalizedString('key-entry-empty', lang), true);
+                return;
+            }
+
+            const iterations = parseInt(iterationsInput.value);
+            if (isNaN(iterations) || iterations <= 0) {
+                showNotification(getLocalizedString('invalid-iterations', lang), true);
+                return;
+            }
+
+            //console.log('Files to encrypt:', FilesToBeEncrypted);
+
+            const encryptButton = document.getElementById('encrypt-button');
+            if (encryptButton) {
+                encryptButton.disabled = true;
+            }
+
+            try {
+                for (const fileInfo of FilesToBeEncrypted) {
+                    await readFileByChunksForEncryption(fileInfo.file, keyInput.value, iterations);
+                    await waitForNextFile(); // Wait for user confirmation before processing the next file
+                }
+            } catch (error) {
+                //console.error('Encryption error:', error);
+                showNotification(getLocalizedString('encryption-error', lang), true);
+            } finally {
+                if (encryptButton) {
+                    encryptButton.disabled = false;
+                }
+            }
+        }
+
+        function showNotification(message, isError = false) {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.classList.add('notification-toast');
+            if (isError) {
+                notification.classList.add('error');
+            }
+            notification.textContent = message;
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 4500);
+        }
+
+        async function readFileByChunksForDecryption(file, password, iterations) {
+            showFileProcessingPopup(file.name, 'reading-content', 'please-wait');
+            const chunkSize = 256 * 1024;
+            const reader = new FileReader();
+            let offset = 0;
+            const totalSize = file.size;
+            const fileBytes = new Uint8Array(totalSize);
+
+            function readChunk(blob) {
+                return new Promise((resolve, reject) => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e.target.error);
+                    reader.readAsArrayBuffer(blob);
+                });
+            }
+
+            async function updateProgressWithDelay(progress) {
+                updateFileProcessingProgress(progress);
+                // Introduce a small delay to allow the browser to update the UI
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            while (offset < totalSize) {
+                const chunk = file.slice(offset, offset + chunkSize);
+                const arrayBuffer = await readChunk(chunk);
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                // Copy chunk to fileBytes array
+                fileBytes.set(uint8Array, offset);
+
+                // Update progress with delay
+                const progress = ((offset + uint8Array.length) / totalSize * 100).toFixed(2);
+                await updateProgressWithDelay(parseFloat(progress));
+
+                offset += uint8Array.length;
+            }
+
+            // After reading the entire file, pass the array to encryptReadFile
+            decryptReadFile(fileBytes, password, iterations, file.name);
+        }
+
+        async function decryptFiles() {
+            const lang = document.documentElement.lang || 'en';
+            const keyInput = document.getElementById('decrypt-key');
+            const iterationsInput = document.getElementById('decrypt-iterations');
+
+            if (FilesToBeDecrypted.length === 0) {
+                showNotification(getLocalizedString('no-files-selected', lang), true);
+                return;
+            }
+
+            if (!keyInput.value) {
+                showNotification(getLocalizedString('key-entry-empty', lang), true);
+                return;
+            }
+
+            const iterations = parseInt(iterationsInput.value);
+            if (isNaN(iterations) || iterations <= 0) {
+                showNotification(getLocalizedString('invalid-iterations', lang), true);
+                return;
+            }
+
+            //console.log('Files to decrypt:', FilesToBeDecrypted);
+
+            const decryptButton = document.getElementById('decrypt-button');
+            if (decryptButton) {
+                decryptButton.disabled = true;
+            }
+
+            try {
+                for (const fileInfo of FilesToBeDecrypted) {
+                    await readFileByChunksForDecryption(fileInfo.file, keyInput.value, iterations);
+                    await waitForNextFile(); // Wait for user confirmation before processing the next file
+                }
+            } catch (error) {
+                //console.error('Decryption error:', error);
+                showNotification(getLocalizedString('decryption-error', lang), true);
+            } finally {
+                if (decryptButton) {
+                    decryptButton.disabled = false;
+                }
+            }
+        }
+
+        async function encryptReadFile(bytes, password, iterations, fileName) {
+            //console.log("File read complete. Starting encryption...");
+            //console.log(`File name: ${fileName}`);
+            //console.log(`File size: ${fileBytes.length} bytes`);
+            //console.log(`Password: ${password}`);
+            //console.log(`Iterations: ${iterations}`);
+
+            // Print the entire fileBytes array in hex
+            /*
+            console.log("File content in hexadecimal:");
+            const bytesPerLine = 16;
+            for (let i = 0; i < fileBytes.length; i += bytesPerLine) {
+                const chunk = fileBytes.slice(i, i + bytesPerLine);
+                const hexLine = Array.from(chunk)
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join(' ');
+                const address = i.toString(16).padStart(8, '0');
+                console.log(`0x${address}: ${hexLine}`);
+            }
+            console.log("Hex dump complete.");
+            */
+            const chunkSize = 16;
+            const encryptedChunks = [];
+            showFileProcessingPopup(fileName, 'generating-salt', "");
+            // Generate a random 32-byte salt
+            const salt = window.crypto.getRandomValues(new Uint8Array(32));
+            encryptedChunks.push(salt);
+            //console.log("Generated salt:", Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+            showFileProcessingPopup(fileName, 'deriving-encryption-key', 'please-wait');
+
+            // Derive the key
+            const derivedKey = await deriveKey(password, salt, iterations);
+            const aesKey = derivedKey.slice(0, 32);
+            const hmacKey = derivedKey.slice(32);
+            //console.log("Derived Key:", Array.from(derivedKey).map(b => b.toString(16).padStart(2, '0')).join(''));
+            //console.log("HMAC Key:", Array.from(hmacKey).map(b => b.toString(16).padStart(2, '0')).join(''));
+            
+            let lastChunk = null;
+            showFileProcessingPopup(fileName, 'generating-iv', "");
+            const iv = window.crypto.getRandomValues(new Uint8Array(16));
+            const encryptedIV = await encryptAES256ECB(iv, aesKey);
+            encryptedChunks.push(encryptedIV);
+            //console.log("Generated IV:", Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join(''));
+            //console.log("Encrypted IV:", Array.from(encryptedIV).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+            showFileProcessingPopup(fileName, 'computing-tag', 'please-wait');
+            // Compute HMAC for the whole file
+            const hmac = await computeHMAC(hmacKey, bytes);
+            //console.log("File HMAC:", Array.from(hmac).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+            //console.log("Encrypting HMAC:");
+            let previousCiphertext = iv; // The first plaintext block is XORed with IV
+
+            for (let i = 0; i < hmac.length; i += chunkSize) {
+                //console.log(`\nProcessing chunk ${i / chunkSize + 1}:`);
+
+                let chunk = hmac.slice(i, i + chunkSize);
+                //console.log("Original HMAC chunk:", Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                //console.log("XORed with:", Array.from(previousCiphertext).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                let xorChunk = chunk.map((byte, index) => byte ^ previousCiphertext[index]);
+                //console.log("After XOR with previousCiphertext:", Array.from(xorChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                let encryptedChunk = await encryptAES256ECB(xorChunk, aesKey);
+                //console.log("After AES-256-ECB encryption:", Array.from(encryptedChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                encryptedChunks.push(encryptedChunk);
+                //console.log("Chunk added to encryptedChunks");
+
+                previousCiphertext = encryptedChunk;
+                //console.log("New previousCiphertext for next iteration:", Array.from(previousCiphertext).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            }
+
+            showFileProcessingPopup(fileName, 'encrypting-file', 'please-wait');
+            let progress = 0;
+            const totalChunks = Math.ceil(bytes.length / chunkSize);
+
+            async function updateProgressWithDelay(progress) {
+                updateFileProcessingProgress(progress);
+                // Introduce a small delay to allow the browser to update the UI
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            //console.log("Split ciphertext:");
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                let chunk = bytes.slice(i, i + chunkSize);
+                if (chunk.length < chunkSize) {
+                    lastChunk = chunk;
+                } else {
+                    let xorChunk = chunk.map((byte, index) => byte ^ previousCiphertext[index]);
+                    let encryptedChunk = await encryptAES256ECB(xorChunk, aesKey);
+                    encryptedChunks.push(encryptedChunk);
+                    previousCiphertext = encryptedChunk;
+                    //console.log(Array.from(encryptedChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                }
+                if (i % 16000 === 0) {
+                    const progress = (i / bytes.length) * 100;
+                    await updateProgressWithDelay(parseFloat(progress));
+                }
+            }
+
+            if (lastChunk) {
+                const padding = chunkSize - lastChunk.length;
+                const paddedChunk = new Uint8Array(chunkSize);
+                paddedChunk.set(lastChunk);
+                paddedChunk.fill(padding, lastChunk.length);
+                let xorChunk = paddedChunk.map((byte, index) => byte ^ previousCiphertext[index]);
+                let encryptedChunk = await encryptAES256ECB(xorChunk, aesKey);
+                encryptedChunks.push(encryptedChunk);
+                //console.log(Array.from(encryptedChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            } else {
+                const paddingBlock = new Uint8Array(chunkSize).fill(0x10);
+                let xorChunk = paddingBlock.map((byte, index) => byte ^ previousCiphertext[index]);
+                let encryptedChunk = await encryptAES256ECB(xorChunk, aesKey);
+                encryptedChunks.push(encryptedChunk);
+                //console.log(Array.from(encryptedChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            }
+
+            updateFileProcessingProgress(100);
+            showFileEncryptionCompletion(fileName, encryptedChunks);
+        }
+
+        async function decryptReadFile(bytes, password, iterations, fileName) {
+            /*
+            console.log("File read complete. Starting decryption...");
+            console.log(`File name: ${fileName}`);
+            console.log(`File size: ${bytes.length} bytes`);
+            console.log(`Password: ${password}`);
+            console.log(`Iterations: ${iterations}`);
+
+            // Print the entire fileBytes array in hex
+            console.log("File content in hexadecimal:");
+            const bytesPerLine = 16;
+            for (let i = 0; i < bytes.length; i += bytesPerLine) {
+                const chunk = bytes.slice(i, i + bytesPerLine);
+                const hexLine = Array.from(chunk)
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join(' ');
+                const address = i.toString(16).padStart(8, '0');
+                console.log(`0x${address}: ${hexLine}`);
+            }
+            console.log("Hex dump complete.");
+            */
+            if (fileName.endsWith('.encr')) {
+                fileName = fileName.slice(0, -5);
+            }
+            const chunkSize = 16;
+            let salt = bytes.slice(0, 32);
+            //console.log("Extracted salt:", Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join(''));
+            showFileProcessingPopup(fileName, 'deriving-decryption-key', 'please-wait');
+            const derivedKey = await deriveKey(password, salt, iterations);
+            const aesKey = derivedKey.slice(0, 32);
+            const hmacKey = derivedKey.slice(32);
+            //console.log("Derived Key:", Array.from(derivedKey).map(b => b.toString(16).padStart(2, '0')).join(''));
+            //console.log("HMAC Key:", Array.from(hmacKey).map(b => b.toString(16).padStart(2, '0')).join(''));
+            let extractedIV = bytes.slice(32, 48);
+            //console.log("Extracted IV:", Array.from(extractedIV).map(b => b.toString(16).padStart(2, '0')).join(''));
+            let decryptedIV = decryptAES256ECB(extractedIV, aesKey);
+            //console.log("Decrypted IV:", Array.from(decryptedIV).map(b => b.toString(16).padStart(2, '0')).join(''));
+            //console.log("Decrypted Tag (Split):");
+            const decryptedTag = [];
+            let previousCiphertext = decryptedIV;
+
+            async function updateProgressWithDelay(progress) {
+                updateFileProcessingProgress(progress);
+                // Introduce a small delay to allow the browser to update the UI
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            for (let i = 48; i < 112; i += chunkSize) {
+                let chunk = bytes.slice(i, i + chunkSize);
+                //console.log("Encrypted HMAC chunk:", Array.from(chunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                let decryptedChunk = await decryptAES256ECB(chunk, aesKey);
+                //console.log("After AES-256-ECB decryption:", Array.from(decryptedChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                //console.log("XORed with:", Array.from(previousCiphertext).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                let xorChunk = decryptedChunk.map((byte, index) => byte ^ previousCiphertext[index]);
+                //console.log("After XOR with previousCiphertext:", Array.from(xorChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                xorChunk.forEach(byte => decryptedTag.push(byte));
+                //console.log("Chunk added to decryptedTag");
+
+                previousCiphertext = chunk; // Use the encrypted chunk for the next XOR
+                //console.log("New previousCiphertext for next iteration:", Array.from(previousCiphertext).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            }
+
+            showFileProcessingPopup(fileName, 'decrypting-file', 'please-wait');
+            const decryptedData = [];
+            const decryptedDataForWrite = [];
+            let dataLengthNoLC = bytes.length - chunkSize;
+            for (let i = 112; i < dataLengthNoLC; i += chunkSize) {
+                let chunk = bytes.slice(i, i + chunkSize);
+                let decryptedChunk = await decryptAES256ECB(chunk, aesKey);
+                let xorChunk = decryptedChunk.map((byte, index) => byte ^ previousCiphertext[index]);
+                xorChunk.forEach(byte => decryptedData.push(byte));
+                decryptedDataForWrite.push(xorChunk);
+                //console.log("", Array.from(xorChunk).map(b => b.toString(16).padStart(2, '0')).join(' '));
+                previousCiphertext = chunk;
+
+                if (i % 16000 === 0) {
+                    const progress = (i / bytes.length) * 100;
+                    await updateProgressWithDelay(parseFloat(progress));
+                }
+            }
+
+            // Handle padding in the last block
+            let encryptedLastBlock = bytes.slice(bytes.length - chunkSize);
+            let decryptedLastBlock = await decryptAES256ECB(encryptedLastBlock, aesKey);
+            let decryptedLastBlockXORed = decryptedLastBlock.map((byte, index) => byte ^ previousCiphertext[index]);
+            //console.log("Decrypted Last Block:", Array.from(decryptedLastBlockXORed).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            let paddingLength = pkcs7PaddingConsumed(decryptedLastBlockXORed);
+            //console.log("Padding Length:", paddingLength);
+
+            let invalidPadding = false;
+            let integrityFailed = false;
+
+            if (paddingLength === 0) {
+                invalidPadding = true;
+                //throw new Error("Invalid padding detected.");
+            } else if (paddingLength === 16) {
+                // Do nothing
+            } else {
+                // Handle padding length between 1 and 15
+                let unpaddedLastBlock = decryptedLastBlockXORed.slice(0, 16 - paddingLength);
+                unpaddedLastBlock.forEach(byte => decryptedData.push(byte));
+                decryptedDataForWrite.push(unpaddedLastBlock); // Flatten the array
+                //console.log("Unpadded Last Block:", Array.from(unpaddedLastBlock).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            }
+            updateFileProcessingProgress(100);
+            showFileProcessingPopup(fileName, 'computing-tag', 'please-wait');
+            //console.log("Decrypted data:", Array.from(decryptedData).map(b => b.toString(16).padStart(2, '0')).join(''));
+            //console.log(decryptedData.length);
+            // Verify HMAC
+            const computedTag = await computeHMAC(hmacKey, new Uint8Array(decryptedData));
+            
+            //console.log("Computed Tag:", Array.from(computedTag).map(b => b.toString(16).padStart(2, '0')).join(' '));
+            if (!compareUint8Arrays(computedTag, decryptedTag)) {
+                integrityFailed = true;
+                //throw new Error("HMAC verification failed. The file may have been tampered with.");
+            }
+            else{
+                //console.log("Integrity Verified Successfully");
+            }
+            if (invalidPadding && integrityFailed) {
+                showDecryptionNotification('both_errors');
+            } else if (invalidPadding) {
+                showDecryptionNotification('invalid_padding');
+            } else if (integrityFailed) {
+                showDecryptionNotification('integrity_failed');
+            } else {
+                //console.log("Integrity Verified Successfully");
+                showDecryptionNotification('success');
+            }
+            if (!integrityFailed) {
+                updateFileProcessingProgress(100);
+                showFileDecryptionCompletion(fileName, decryptedDataForWrite);
+            }
+            else{
+                showFileDecryptionCompletionWithErr(fileName, decryptedDataForWrite);
+            }
+        }
+
+        function compareUint8Arrays(a, b) {
+            if (a.length !== b.length) return false;
+            return a.every((val, index) => val === b[index]);
+        }
+
+        function pkcs7PaddingConsumed(data) {
+            // Check if the last 16 bytes are all 0x10
+            let allTen = true;
+
+            for (let i = 0; i < 16; i++) {
+                if (data[i] !== 0x10) {
+                    allTen = false;
+                    break;
+                }
+            }
+
+            if (allTen) {
+                return 16; // Return 16 if all are 0x10
+            }
+
+            // Get the last byte, which indicates the number of padding bytes
+            const paddingValue = data[15];
+
+            // Validate the padding value
+            if (paddingValue < 1 || paddingValue > 16) {
+                return 0; // Invalid padding
+            }
+
+            // Check if the last paddingValue bytes are all equal to paddingValue
+            for (let i = 1; i <= paddingValue; i++) {
+                if (data[16 - i] !== paddingValue) {
+                    return 0; // Invalid padding
+                }
+            }
+
+            // If all checks pass, return the number of padding bytes consumed
+            return paddingValue;
+        }
+
+        function showDecryptionNotification(type) {
+            const container = document.getElementById('rectangle-pop-up-notification-container');
+            const successBox = document.getElementById('rectangle-pop-up-notification-success-box');
+            const errorBox = document.getElementById('rectangle-pop-up-notification-error-box');
+            const errorBox2 = document.getElementById('rectangle-pop-up-notification-error-box2');
+
+            container.style.display = 'flex';
+
+            successBox.style.display = 'none';
+            errorBox.style.display = 'none';
+            errorBox2.style.display = 'none';
+
+            switch(type) {
+                case 'success':
+                successBox.style.display = 'flex';
+                successBox.style.top = '50%';
+                successBox.style.transform = 'translateY(-50%)';
+                break;
+                case 'invalid_padding':
+                errorBox.style.display = 'flex';
+                break;
+                case 'integrity_failed':
+                errorBox2.style.display = 'flex';
+                break;
+                case 'both_errors':
+                errorBox.style.display = 'flex';
+                errorBox2.style.display = 'flex';
+                break;
+            }
+        }
+
+        function closeNotification(boxId) {
+            const box = document.getElementById(boxId);
+            box.style.display = 'none';
+
+            const container = document.getElementById('rectangle-pop-up-notification-container');
+            const successBox = document.getElementById('rectangle-pop-up-notification-success-box');
+            const errorBox = document.getElementById('rectangle-pop-up-notification-error-box');
+            const errorBox2 = document.getElementById('rectangle-pop-up-notification-error-box2');
+
+            if (successBox.style.display === 'none' && errorBox.style.display === 'none' && errorBox2.style.display === 'none') {
+                container.style.display = 'none';
+            }
+        }
+
+    </script>
+</body>
+</html>
