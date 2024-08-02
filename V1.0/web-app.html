@@ -1796,6 +1796,7 @@
                 'file-encrypted-success': "The file \"{FILENAME}\" has been encrypted successfully.",
                 'file-decrypted-success': "The file \"{FILENAME}\" has been decrypted successfully.",
                 'click-to-download': "Click the Download button to save the encrypted file.",
+                'click-to-download-decrypted': "Click the Download button to save the decrypted file.",
                 'encryption-complete': "All files have been encrypted successfully.",
                 'page-might-freeze': "Please note: The page might freeze during this step.",
                 'file-decrypted-err': "The file \"{FILENAME}\" has been decrypted with at least one error."
@@ -1818,6 +1819,7 @@
                 'file-encrypted-success': ".הוצפן בהצלחה \"{FILENAME}\" הקובץ",
                 'file-decrypted-success': ".פוענח בהצלחה \"{FILENAME}\" הקובץ",
                 'click-to-download': ".לחץ על כפתור ההורדה כדי לשמור את הקובץ המוצפן",
+                'click-to-download-decrypted': ".לחץ על כפתור ההורדה כדי לשמור את הקובץ המפוענח",
                 'encryption-complete': ".כל הקבצים הוצפנו בהצלחה",
                 'page-might-freeze': ".שימו לב: ייתכן שהדף יקפא במהלך שלב זה",
                 'file-decrypted-err': ".פוענח עם לפחות שגיאה אחת \"{FILENAME}\" הקובץ"
@@ -1840,6 +1842,7 @@
                 'file-encrypted-success': "El archivo \"{FILENAME}\" ha sido encriptado con éxito.",
                 'file-decrypted-success': "El archivo \"{FILENAME}\" ha sido descifrado con éxito.",
                 'click-to-download': "Haga clic en el botón Descargar para guardar el archivo encriptado.",
+                'click-to-download-decrypted': "Haga clic en el botón Descargar para guardar el archivo descifrado.",
                 'encryption-complete': "Todos los archivos han sido encriptados con éxito.",
                 'page-might-freeze': "Por favor, tenga en cuenta: La página podría congelarse durante este paso.",
                 'file-decrypted-err': "El archivo \"{FILENAME}\" ha sido descifrado con al menos un error."
@@ -1862,6 +1865,7 @@
                 'file-encrypted-success': "Die Datei \"{FILENAME}\" wurde erfolgreich verschlüsselt.",
                 'file-decrypted-success': "Die Datei \"{FILENAME}\" wurde erfolgreich entschlüsselt.",
                 'click-to-download': "Klicken Sie auf die Schaltfläche Herunterladen, um die verschlüsselte Datei zu speichern.",
+                'click-to-download-decrypted': "Klicken Sie auf die Schaltfläche Herunterladen, um die entschlüsselte Datei zu speichern.",
                 'encryption-complete': "Alle Dateien wurden erfolgreich verschlüsselt.",
                 'page-might-freeze': "Bitte beachten: Die Seite könnte während dieses Schrittes einfrieren.",
                 'file-decrypted-err': "Die Datei \"{FILENAME}\" wurde mit mindestens einem Fehler entschlüsselt."
@@ -1959,7 +1963,7 @@
             const lang = document.documentElement.lang || 'en';
             const filenameSpan = `<span class="filename-span" dir="auto">${originalFilename}</span>`;
             messageLine1.innerHTML = getLocalizedString('file-decrypted-success', lang).replace('{FILENAME}', filenameSpan);
-            messageLine2.textContent = getLocalizedString('click-to-download', lang);
+            messageLine2.textContent = getLocalizedString('click-to-download-decrypted', lang);
 
             downloadButton.disabled = false;
             downloadButton.onclick = () => {
@@ -1988,7 +1992,7 @@
             const lang = document.documentElement.lang || 'en';
             const filenameSpan = `<span class="filename-span" dir="auto">${originalFilename}</span>`;
             messageLine1.innerHTML = getLocalizedString('file-decrypted-err', lang).replace('{FILENAME}', filenameSpan);
-            messageLine2.textContent = getLocalizedString('click-to-download', lang);
+            messageLine2.textContent = getLocalizedString('click-to-download-decrypted', lang);
 
             downloadButton.disabled = false;
             downloadButton.onclick = () => {
