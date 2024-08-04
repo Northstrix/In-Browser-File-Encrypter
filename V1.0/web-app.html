@@ -2109,18 +2109,21 @@
                 const nextButton = document.getElementById('file-processing-popup-next-button');
                 const popup = document.getElementById('file-processing-popup');
 
-                nextButton.onclick = () => {
+                const handleResolve = () => {
                     popup.style.display = 'none';
+                    nextButton.removeEventListener('click', handleResolve);
+                    popup.removeEventListener('click', handlePopupClick);
                     resolve();
                 };
 
-                // Add this to handle the case when the popup is closed without clicking the next button
-                popup.addEventListener('click', (event) => {
+                const handlePopupClick = (event) => {
                     if (event.target === popup) {
-                        popup.style.display = 'none';
-                        resolve();
+                        handleResolve();
                     }
-                }, { once: true });
+                };
+
+                nextButton.addEventListener('click', handleResolve);
+                popup.addEventListener('click', handlePopupClick);
             });
         }
 
